@@ -2,6 +2,7 @@ const CACHE_NAME = "astracognix-cache-v1";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
+  "/offline.html",
   "/manifest.json",
   "/logo.png"
 ];
@@ -59,9 +60,9 @@ self.addEventListener("fetch", (event) => {
           if (cachedResponse) {
             return cachedResponse;
           }
-          // If HTML page failed, return basic offline screen indicator
-          if (event.request.headers.get("accept").includes("text/html")) {
-            return caches.match("/index.html");
+          // Intercept failed navigation requests and serve offline page
+          if (event.request.headers.get("accept") && event.request.headers.get("accept").includes("text/html")) {
+            return caches.match("/offline.html");
           }
         });
       })

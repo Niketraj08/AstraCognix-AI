@@ -682,6 +682,10 @@ async function startServer() {
     res.sendFile(path.join(process.cwd(), "public", "logo.png"));
   });
 
+  app.get("/offline.html", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "public", "offline.html"));
+  });
+
   app.get("/favicon.ico", (req, res) => {
     const faviconPath = path.join(process.cwd(), "public", "favicon.ico");
     if (fs.existsSync(faviconPath)) {
