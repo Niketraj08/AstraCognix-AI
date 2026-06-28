@@ -18,6 +18,7 @@ if (!fs.existsSync(publicDir)) {
 const logoSrc = path.join(process.cwd(), "src", "assets", "images", "logo_icon_1782653752245.jpg");
 if (fs.existsSync(logoSrc)) {
   fs.copyFileSync(logoSrc, path.join(publicDir, "logo.png"));
+  fs.copyFileSync(logoSrc, path.join(publicDir, "favicon.ico"));
 }
 
 // Body parsing middlewares
@@ -666,6 +667,33 @@ app.post("/api/admin/notifications", (req, res) => {
 
 // --- VITE MIDDLEWARE SETUP ---
 async function startServer() {
+  // Explicit route handlers for manifest.json, sw.js, and logo assets to prevent SPA fallbacks in both dev and prod
+  app.get("/manifest.json", (req, res) => {
+    res.setHeader("Content-Type", "application/json");
+    res.sendFile(path.join(process.cwd(), "public", "manifest.json"));
+  });
+
+  app.get("/sw.js", (req, res) => {
+    res.setHeader("Content-Type", "application/javascript");
+    res.sendFile(path.join(process.cwd(), "public", "sw.js"));
+  });
+
+  app.get("/logo.png", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "public", "logo.png"));
+  });
+
+  app.get("/favicon.ico", (req, res) => {
+    const faviconPath = path.join(process.cwd(), "public", "favicon.ico");
+    if (fs.existsSync(faviconPath)) {
+      res.sendFile(faviconPath);
+    } else {
+      res.status(404).end();
+    }
+  });
+
+  // Directly serve public directory statically to avoid Vite SPA route fallback on manifest.json/favicon.ico
+  app.use(express.static(path.join(process.cwd(), "public")));
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
