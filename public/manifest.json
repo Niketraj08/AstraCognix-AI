@@ -1,0 +1,39 @@
+{
+  "name": "AstraCogniX AI - MERN Stack AI SaaS Platform",
+  "short_name": "AstraCogniX",
+  "description": "Premium AI SaaS platform with real-time chats, custom agents, OCR documents translation and live subscription tracker.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#FF6B00",
+  "orientation": "portrait",
+  "categories": ["productivity", "utilities", "ai"],
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Chat",
+      "url": "/?shortcut=newchat",
+      "description": "Start a new conversation session",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "AI Agent Workspace",
+      "url": "/?shortcut=agents",
+      "description": "Open your customized AI agents workspace",
+      "icons": [{ "src": "/logo.png", "sizes": "192x192" }]
+    }
+  ]
+}

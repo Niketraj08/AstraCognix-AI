@@ -1,0 +1,6 @@
+{
+  "name": "AstraCogniX AI",
+  "description": "A premium production-ready AI SaaS platform featuring a MERN-style stack with conversational chats, OCR/document analysis, custom AI agents, user dashboards, subscriptions, and an admin panel.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
