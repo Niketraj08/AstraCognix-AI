@@ -49,6 +49,54 @@ import {
   Menu
 } from "lucide-react";
 
+// --- GLOBAL FETCH INTERCEPTOR FOR EXTERNAL DEPLOYMENT ---
+// Intercepts all frontend /api/* requests and forwards them to the specified backend API
+// when deployed to production, while maintaining local-relative routing when running in development/AI Studio.
+const originalFetch = window.fetch;
+try {
+  Object.defineProperty(window, "fetch", {
+    configurable: true,
+    enumerable: true,
+    writable: true,
+    value: function (input: RequestInfo | URL, init?: RequestInit) {
+      let url = input;
+      if (typeof input === "string" && input.startsWith("/api/")) {
+        const meta = import.meta as any;
+        const apiBase = (meta && meta.env && meta.env.VITE_API_BASE_URL) || (
+          window.location.hostname === "localhost" || 
+          window.location.hostname.includes("127.0.0.1") || 
+          window.location.hostname.endsWith(".run.app")
+            ? "" 
+            : "https://astracognix-ai.onrender.com"
+        );
+        url = `${apiBase}${input}`;
+      }
+      return originalFetch(url, init);
+    }
+  });
+} catch (e) {
+  console.warn("Could not override window.fetch directly, using fallback.", e);
+  try {
+    (window as any).fetch = function (input: any, init: any) {
+      let url = input;
+      if (typeof input === "string" && input.startsWith("/api/")) {
+        const meta = import.meta as any;
+        const apiBase = (meta && meta.env && meta.env.VITE_API_BASE_URL) || (
+          window.location.hostname === "localhost" || 
+          window.location.hostname.includes("127.0.0.1") || 
+          window.location.hostname.endsWith(".run.app")
+            ? "" 
+            : "https://astracognix-ai.onrender.com"
+        );
+        url = `${apiBase}${input}`;
+      }
+      return originalFetch(url, init);
+    };
+  } catch (err) {
+    console.error("Failed fallback fetch override:", err);
+  }
+}
+
 interface UserProfile {
   id: string;
   email: string;
