@@ -43,7 +43,6 @@ export interface GeminiQueryOptions {
  */
 export async function queryGemini(options: GeminiQueryOptions): Promise<{ text: string; isSimulated: boolean }> {
   const client = getGeminiClient();
-  const modelName = "gemini-3.5-flash";
 
   if (!client) {
     // Return high-quality, simulated, rich response
@@ -53,47 +52,77 @@ export async function queryGemini(options: GeminiQueryOptions): Promise<{ text: 
     };
   }
 
-  try {
-    const parts: any[] = [];
+  const modelsToTry = ["gemini-3.5-flash", "gemini-flash-latest", "gemini-3.1-flash-lite"];
+  const parts: any[] = [];
 
-    if (options.fileData) {
-      parts.push({
-        inlineData: {
-          mimeType: options.fileData.mimeType,
-          data: options.fileData.base64,
-        },
-      });
-    }
-
+  if (options.fileData) {
     parts.push({
-      text: options.prompt,
+      inlineData: {
+        mimeType: options.fileData.mimeType,
+        data: options.fileData.base64,
+      },
     });
-
-    const response = await client.models.generateContent({
-      model: modelName,
-      contents: { parts },
-      config: options.systemInstruction
-        ? {
-            systemInstruction: options.systemInstruction,
-          }
-        : undefined,
-    });
-
-    return {
-      text: response.text || "No response received from Gemini.",
-      isSimulated: false,
-    };
-  } catch (err: any) {
-    console.error("Gemini API call failed, falling back to simulation mode:", err);
-    return {
-      text: `[Simulation Fallback (Reason: ${err.message || "API Error"})]\n\n${simulateResponse(
-        options.prompt,
-        options.systemInstruction,
-        options.fileData?.mimeType
-      )}`,
-      isSimulated: true,
-    };
   }
+
+  parts.push({
+    text: options.prompt,
+  });
+
+  let lastError: any = null;
+
+  for (const modelName of modelsToTry) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const response = await client.models.generateContent({
+          model: modelName,
+          contents: { parts },
+          config: options.systemInstruction
+            ? {
+                systemInstruction: options.systemInstruction,
+              }
+            : undefined,
+        });
+
+        return {
+          text: response.text || "No response received from Gemini.",
+          isSimulated: false,
+        };
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Gemini API call failed for model ${modelName} on attempt ${attempt}/2:`, err);
+        
+        // Check if error is transient (503 Service Unavailable, 429 Rate Limit, etc.)
+        const isTransient = err.status === 503 || 
+                            err.status === 429 || 
+                            (err.message && (
+                              err.message.includes("503") || 
+                              err.message.includes("429") || 
+                              err.message.includes("demand") || 
+                              err.message.includes("unavailable") || 
+                              err.message.includes("temporary")
+                            ));
+
+        if (isTransient && attempt < 2) {
+          // Wait 1200ms before retrying on same model
+          await new Promise((resolve) => setTimeout(resolve, 1200));
+        } else {
+          // If it's not transient, or we've run out of attempts, proceed to next model
+          break;
+        }
+      }
+    }
+  }
+
+  // If all models and attempts failed, run fallback simulation
+  console.error("All Gemini models and retry attempts failed, falling back to simulation mode:", lastError);
+  return {
+    text: `[Simulation Fallback (Reason: ${lastError?.message || "API Error"})]\n\n${simulateResponse(
+      options.prompt,
+      options.systemInstruction,
+      options.fileData?.mimeType
+    )}`,
+    isSimulated: true,
+  };
 }
 
 /**
